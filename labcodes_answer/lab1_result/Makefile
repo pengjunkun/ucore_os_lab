@@ -3,6 +3,7 @@ EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
+#this character means that DO NOT display this command itself but the result	
 V       := @
 
 # try to infer the correct GCCPREFX
@@ -136,8 +137,9 @@ $(kernel): $(KOBJS)
 	@echo + ld $@
 	$(V)$(LD) $(LDFLAGS) -T tools/kernel.ld -o $@ $(KOBJS)
 	@$(OBJDUMP) -S $@ > $(call asmfile,kernel)
+	echo asmfile is at $(call asmfile,kernel)
 	@$(OBJDUMP) -t $@ | $(SED) '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(call symfile,kernel)
-
+	@echo $(call symfile,kernel)
 $(call create_target,kernel)
 
 # -------------------------------------------------------------------
@@ -147,6 +149,7 @@ bootfiles = $(call listf_cc,boot)
 $(foreach f,$(bootfiles),$(call cc_compile,$(f),$(CC),$(CFLAGS) -Os -nostdinc))
 
 bootblock = $(call totarget,bootblock)
+
 
 $(bootblock): $(call toobj,$(bootfiles)) | $(call totarget,sign)
 	@echo + ld $@
@@ -173,7 +176,7 @@ $(UCOREIMG): $(kernel) $(bootblock)
 	$(V)dd if=/dev/zero of=$@ count=10000
 	$(V)dd if=$(bootblock) of=$@ conv=notrunc
 	$(V)dd if=$(kernel) of=$@ seek=1 conv=notrunc
-
+	
 $(call create_target,ucore.img)
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -214,13 +217,14 @@ qemu: $(UCOREIMG)
 
 qemu-nox: $(UCOREIMG)
 	$(V)$(QEMU) -serial mon:stdio -hda $< -nographic
-TERMINAL        :=gnome-terminal
+TERMINAL        :=zsh
 gdb: $(UCOREIMG)
 	$(V)$(QEMU) -S -s -parallel stdio -hda $< -serial null
 debug: $(UCOREIMG)
-	$(V)$(QEMU) -S -s -parallel stdio -hda $< -serial null &
+#	$(V)$(QEMU)  -S -s -parallel stdio -hda $< -serial null &
+	$(V)$(QEMU)  -d in_asm -D q.log -S -s -parallel stdio -hda $< -serial null & 
 	$(V)sleep 2
-	$(V)$(TERMINAL)  -e "cgdb -q -x tools/gdbinit"
+	$(V)$(TERMINAL) -c "gdb -tui -x tools/gdbinit"
 	
 debug-nox: $(UCOREIMG)
 	$(V)$(QEMU) -S -s -serial mon:stdio -hda $< -nographic &
@@ -247,9 +251,11 @@ touch:
 print-%:
 	@echo $($(shell echo $(patsubst print-%,%,$@) | $(TR) [a-z] [A-Z]))
 
+#fake file object which is used as a label for command
 .PHONY: clean dist-clean handin packall
 clean:
 	$(V)$(RM) $(GRADE_GDB_IN) $(GRADE_QEMU_OUT)
+	#this -    is used to make progress run if there is some problems in the process
 	-$(RM) -r $(OBJDIR) $(BINDIR)
 
 dist-clean: clean
