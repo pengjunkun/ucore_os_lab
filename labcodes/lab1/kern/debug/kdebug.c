@@ -291,6 +291,24 @@ read_eip(void) {
 void
 print_stackframe(void) {
      /* LAB1 YOUR CODE : STEP 1 */
+	uint32_t ebp_v=read_eip();
+	uint32_t eip_v=read_eip();
+	//for every level in the stack, do below:
+	int i,j;
+	for(i=0;ebp_v !=0 && i<STACKFRAME_DEPTH;i++)
+	{
+		cprintf("ebp is: %08x, eip is: %08x.",ebp_v,eip_v);
+		uint32_t *ebp_words=(uint32_t *)ebp_v +2;
+		cprintf("-------------");
+		for(j=0;j<4;j++){
+		cprintf("%08x",ebp_words[j]);
+		}
+		cprintf("\n");
+		print_debuginfo(eip_v - 1);
+		//use (unit32_t *) to get the address
+		eip_v = (&ebp_v)[1];
+        ebp_v = (&ebp_v)[0];
+	}
      /* (1) call read_ebp() to get the value of ebp. the type is (uint32_t);
       * (2) call read_eip() to get the value of eip. the type is (uint32_t);
       * (3) from 0 .. STACKFRAME_DEPTH

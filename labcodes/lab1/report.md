@@ -176,4 +176,7 @@ Q2:bootloader是如何加载ELF格式的OS？
 Answer：通过elf文件的头，对elf格式进行判断。然后在elf的指定位置里获取关于整个elf的信息，从而加载整个elf文件。
 在加载后，跳到ucroe去，交给其控制权。
 
-
+### exercise5
+跟踪打印调用的函数的ebp&eip信息
+程序在加载进内存后，每个函数有自己的内存的位置。
+ss:ebp+4指向caller调用时的eip，ss:ebp+8等是（可能的）参数。
