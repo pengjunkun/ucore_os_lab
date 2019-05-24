@@ -375,17 +375,29 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+	//PDX(la): get the index of this la in pdt
+	//&pgdir[PDX(la)]: get the pde point
     pde_t *pdep = &pgdir[PDX(la)];
+	//any one of *pdep and PTE_P is false, will execute inside
     if (!(*pdep & PTE_P)) {
         struct Page *page;
+		//if
+		//1.not need to create 
+		//2.failed to allocate a page
+		// return;
         if (!create || (page = alloc_page()) == NULL) {
             return NULL;
         }
+		//update the reference
         set_page_ref(page, 1);
+		//get he physical address by virtual page
         uintptr_t pa = page2pa(page);
         memset(KADDR(pa), 0, PGSIZE);
+		//for now, the pdep can be get by combining the pa and attributes
         *pdep = pa | PTE_U | PTE_W | PTE_P;
     }
+	//PDE_ADDR(*pdep): get the address in pde
+	//KADDR(PDE_ADDR(*pdep)): get the kernal addresses of pte_baseAddresses which are saved in this pde
     return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];
 }
 

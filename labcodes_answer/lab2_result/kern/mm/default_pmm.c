@@ -128,6 +128,7 @@ default_alloc_pages(size_t n) {
     struct Page *page = NULL;
     list_entry_t *le = &free_list;
     // TODO: optimize (next-fit)
+	//find the first proper page
     while ((le = list_next(le)) != &free_list) {
         struct Page *p = le2page(le, page_link);
         if (p->property >= n) {
@@ -136,6 +137,7 @@ default_alloc_pages(size_t n) {
         }
     }
     if (page != NULL) {
+		//more than this needs, cut size n
         if (page->property > n) {
             struct Page *p = page + n;
             p->property = page->property - n;
@@ -161,6 +163,7 @@ default_free_pages(struct Page *base, size_t n) {
     base->property = n;
     SetPageProperty(base);
     list_entry_t *le = list_next(&free_list);
+	//the free_list is double-head list, do while in this list
     while (le != &free_list) {
         p = le2page(le, page_link);
         le = list_next(le);

@@ -373,16 +373,23 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     return NULL;          // (8) return page table entry
 #endif
     pde_t *pdep = &pgdir[PDX(la)];
+	//if this entry exists, go to return line
+	//codes inside the below if() handles the case which stands for missing the page table page (not the physical page) of this address.
     if (!(*pdep & PTE_P)) {
         struct Page *page;
+		//create==0: not allocate a page, which is a short circuit. This action just creates a entry, but not creating a page table
         if (!create || (page = alloc_page()) == NULL) {
             return NULL;
         }
         set_page_ref(page, 1);
+		//get the physical address of this page table
         uintptr_t pa = page2pa(page);
+		//initial this new page, beacause no map in this new page table
         memset(KADDR(pa), 0, PGSIZE);
+		//combine the pa and permissions to get the whole entry
         *pdep = pa | PTE_U | PTE_W | PTE_P;
     }
+	//return the virtual addr
     return &((pte_t *)KADDR(PDE_ADDR(*pdep)))[PTX(la)];
 }
 
@@ -430,10 +437,13 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
     }
 #endif
     if (*ptep & PTE_P) {
+		//get the page
         struct Page *page = pte2page(*ptep);
+		//if it's needed to free the page
         if (page_ref_dec(page) == 0) {
             free_page(page);
         }
+		//whether the page is freed or not, this entry should be removed anyway.
         *ptep = 0;
         tlb_invalidate(pgdir, la);
     }
@@ -454,24 +464,29 @@ page_remove(pde_t *pgdir, uintptr_t la) {
 //  page:  the Page which need to map
 //  la:    the linear address need to map
 //  perm:  the permission of this Page which is setted in related pte
-// return value: always 0
+// return value: always 0, if succeed
 //note: PT is changed, so the TLB need to be invalidate 
 int
 page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
+	//get the page table entry for this la
     pte_t *ptep = get_pte(pgdir, la, 1);
     if (ptep == NULL) {
         return -E_NO_MEM;
     }
     page_ref_inc(page);
+	//if this la already combined with a page and it's valide
     if (*ptep & PTE_P) {
         struct Page *p = pte2page(*ptep);
         if (p == page) {
             page_ref_dec(page);
         }
         else {
+			//the old entry and page is valide, but the os need to replace it.
+			//so, remove old entry and map with the new page
             page_remove_pte(pgdir, la, ptep);
         }
     }
+	//update the entry
     *ptep = page2pa(page) | PTE_P | perm;
     tlb_invalidate(pgdir, la);
     return 0;
@@ -491,8 +506,10 @@ tlb_invalidate(pde_t *pgdir, uintptr_t la) {
 //                  - pa<->la with linear address la and the PDT pgdir
 struct Page *
 pgdir_alloc_page(pde_t *pgdir, uintptr_t la, uint32_t perm) {
+	//get a new page
     struct Page *page = alloc_page();
     if (page != NULL) {
+		//insert this page's map into page table
         if (page_insert(pgdir, page, la, perm) != 0) {
             free_page(page);
             return NULL;

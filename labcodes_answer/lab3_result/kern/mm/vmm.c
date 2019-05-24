@@ -75,6 +75,7 @@ find_vma(struct mm_struct *mm, uintptr_t addr) {
     struct vma_struct *vma = NULL;
     if (mm != NULL) {
         vma = mm->mmap_cache;
+        //if not fulfill these three conditions, it will go into
         if (!(vma != NULL && vma->vm_start <= addr && vma->vm_end > addr)) {
                 bool found = 0;
                 list_entry_t *list = &(mm->mmap_list), *le = list;
@@ -397,13 +398,14 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
    }
 #endif
     // try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
-    // (notice the 3th parameter '1')
+    // (notice the 3th parameter '1') this will creat a new page for this address
     if ((ptep = get_pte(mm->pgdir, addr, 1)) == NULL) {
         cprintf("get_pte in do_pgfault failed\n");
         goto failed;
     }
     
-    if (*ptep == 0) { // if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
+    if (*ptep == 0) { 
+		// if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
         if (pgdir_alloc_page(mm->pgdir, addr, perm) == NULL) {
             cprintf("pgdir_alloc_page in do_pgfault failed\n");
             goto failed;

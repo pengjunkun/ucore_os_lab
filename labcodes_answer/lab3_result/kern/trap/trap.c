@@ -73,6 +73,7 @@ trapname(int trapno) {
         "Segment Not Present",
         "Stack Fault",
         "General Protection",
+		//add this trap for lacking the lacking virtual page
         "Page Fault",
         "(unknown trap)",
         "x87 FPU Floating-Point Error",
