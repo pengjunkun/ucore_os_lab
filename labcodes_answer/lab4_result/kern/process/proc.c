@@ -94,6 +94,8 @@ alloc_proc(void) {
      *       int runs;                                   // the running times of Proces
      *       uintptr_t kstack;                           // Process kernel stack
      *       volatile bool need_resched;                 // bool value: need to be rescheduled to release CPU?
+	 *       //in lab4, proc is kernel process, which means this virtual memory struct is useless.
+		+       //so, the cr3 attribute is used to save the pgdir
      *       struct proc_struct *parent;                 // the parent process
      *       struct mm_struct *mm;                       // Process's memory management field
      *       struct context context;                     // Switch here to run process
@@ -226,6 +228,8 @@ kernel_thread(int (*fn)(void *), void *arg, uint32_t clone_flags) {
     tf.tf_ds = tf.tf_es = tf.tf_ss = KERNEL_DS;
     tf.tf_regs.reg_ebx = (uint32_t)fn;
     tf.tf_regs.reg_edx = (uint32_t)arg;
+	//ip points to an assemble file the entrance
+	//ask the thread to call function
     tf.tf_eip = (uint32_t)kernel_thread_entry;
     return do_fork(clone_flags | CLONE_VM, 0, &tf);
 }
@@ -378,6 +382,7 @@ proc_init(void) {
         panic("cannot alloc idleproc.\n");
     }
 
+	//this proc is used to circulate procs, and make the runnable proc go to work
     idleproc->pid = 0;
     idleproc->state = PROC_RUNNABLE;
     idleproc->kstack = (uintptr_t)bootstack;
@@ -387,11 +392,13 @@ proc_init(void) {
 
     current = idleproc;
 
+	//get a kernel thread with function parameter
     int pid = kernel_thread(init_main, "Hello world!!", 0);
     if (pid <= 0) {
         panic("create init_main failed.\n");
     }
 
+	//link
     initproc = find_proc(pid);
     set_proc_name(initproc, "init");
 
