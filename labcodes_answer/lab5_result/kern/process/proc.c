@@ -475,6 +475,7 @@ do_exit(int error_code) {
         if (proc->wait_state == WT_CHILD) {
             wakeup_proc(proc);
         }
+		//if the current process has children,link them into initproc
         while (current->cptr != NULL) {
             proc = current->cptr;
             current->cptr = proc->optr;
@@ -619,6 +620,7 @@ load_icode(unsigned char *binary, size_t size) {
 
     //(6) setup trapframe for user environment
     struct trapframe *tf = current->tf;
+	//clear the old trapframe(kernel), then set to the new trapfram(user mode)
     memset(tf, 0, sizeof(struct trapframe));
     /* LAB5:EXERCISE1 YOUR CODE
      * should set tf_cs,tf_ds,tf_es,tf_ss,tf_esp,tf_eip,tf_eflags
@@ -633,6 +635,7 @@ load_icode(unsigned char *binary, size_t size) {
     tf->tf_ds = tf->tf_es = tf->tf_ss = USER_DS;
     tf->tf_esp = USTACKTOP;
     tf->tf_eip = elf->e_entry;
+	//interrupt_flag
     tf->tf_eflags = FL_IF;
     ret = 0;
 out:
@@ -660,13 +663,16 @@ do_execve(const char *name, size_t len, unsigned char *binary, size_t size) {
     }
 
     char local_name[PROC_NAME_LEN + 1];
+	//set the new process name
     memset(local_name, 0, sizeof(local_name));
     memcpy(local_name, name, len);
 
     if (mm != NULL) {
         lcr3(boot_cr3);
+		//clear the memroy table
         if (mm_count_dec(mm) == 0) {
             exit_mmap(mm);
+			// put_pgdir - free the memory space of PDT
             put_pgdir(mm);
             mm_destroy(mm);
         }
