@@ -15,6 +15,7 @@
 static int
 proc_stride_comp_f(void *a, void *b)
 {
+	//use signed arithmetic operation to compare unsigned fingers.
      struct proc_struct *p = le2proc(a, lab6_run_pool);
      struct proc_struct *q = le2proc(b, lab6_run_pool);
      int32_t c = p->lab6_stride - q->lab6_stride;

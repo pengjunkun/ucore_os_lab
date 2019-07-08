@@ -65,7 +65,9 @@ cond_wait (condvar_t *cvp) {
       if(cvp->owner->next_count > 0)
          up(&(cvp->owner->next));
       else
+		  //this sentence signal mutex waiting proc to runable queue, but it don't run right away
          up(&(cvp->owner->mutex));
+	 //make current proc itself to sleep at the cvp.sem, then give the cpu to next scheduled runable proc
       down(&(cvp->sem));
       cvp->count --;
     cprintf("cond_wait end:  cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
