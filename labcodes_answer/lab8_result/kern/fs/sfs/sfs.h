@@ -50,13 +50,15 @@ struct sfs_disk_inode {
     uint16_t type;                                  /* one of SYS_TYPE_* above */
     uint16_t nlinks;                                /* # of hard links to this file */
     uint32_t blocks;                                /* # of blocks */
-    uint32_t direct[SFS_NDIRECT];                   /* direct blocks */
-    uint32_t indirect;                              /* indirect blocks */
+    uint32_t direct[SFS_NDIRECT];                   /* direct blocks 
+														直接索引 12*4K*/
+    uint32_t indirect;                              /* indirect blocks 
+														一级间接索引*/
 //    uint32_t db_indirect;                           /* double indirect blocks */
 //   unused
 };
 
-/* file entry (on disk) */
+/* file entry (on disk) 目录下保存大所有文件名 */
 struct sfs_disk_entry {
     uint32_t ino;                                   /* inode number */
     char name[SFS_MAX_FNAME_LEN + 1];               /* file name */
